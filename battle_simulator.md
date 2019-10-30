@@ -23,7 +23,7 @@ All units have the following properties:
 
 
 | Property |     Range    |                             Description                                 |
-|----------|--------------|-------------------------------------------------------------------------|
+|----------|--------------|-------------------------------------------------------------------------| 
 | health   | % \[0-100\]  | Represents the health of the unit                                       |
 | recharge | \[100-2000\] | Represents the number of ms required to recharge the unit for an attack |
 

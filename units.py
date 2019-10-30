@@ -1,33 +1,39 @@
 from units_consts import *
 from random import randint, choice, shuffle
+from time import time
 from statistics import mean
 from specfuncs import unit_iterator, geometric_mean as gmean
 
 
 # abstract class
 class Unit:
-    def __init__(self, hp, recharge):   # make recharge work!!!!
+    def __init__(self, hp, recharge_ms):   # make recharge work!!!!
         self.hp = hp
-        self.recharge = recharge
+        self.recharge_ms = recharge_ms
+        self.recharge_time = 0
 
     def inflict_damage(self, damage):
         return damage
-        # if self.attack_success() >= enemy_unit.attack_success():  # attack_success may be from Soldier or from Vehicle
-        # enemy_unit.hp -= damage
-        # enemy_unit.hp = max(enemy_unit.hp, 0)  # if hp <= 0 then hp == 0
 
     def attack_success(self, probability_of_attack):  # if self success >= enemy success then attack is success!
         return probability_of_attack
+
+    def recharge(self):
+        self.recharge_time = round(time() * 1000) + self.recharge_ms
 
     @property
     def is_active(self):
         return self.hp > 0
 
+    @property
+    def stand_to(self):
+        return self.recharge_time < round(time() * 1000)
+
 
 class Soldier(Unit):
-    def __init__(self, hp=SOLDIER_HP, recharge=SOLDIER_RECHARGE, exp=SOLDIER_EXP):
+    def __init__(self, hp=SOLDIER_HP, recharge_ms=SOLDIER_RECHARGE_MS, exp=SOLDIER_EXP):
         self.exp = exp
-        super().__init__(hp, recharge)
+        super().__init__(hp, recharge_ms)
 
     def inflict_damage(self):
         damage = 0.05 + self.exp / 100
@@ -43,10 +49,10 @@ class Soldier(Unit):
 
 
 class Vehicle(Unit):
-    def __init__(self, hp=VEHICLE_HP, recharge=VEHICLE_RECHARGE, operator_count=OPERATOR_COUNT):
+    def __init__(self, hp=VEHICLE_HP, recharge_ms=VEHICLE_RECHARGE_MS, operator_count=OPERATOR_COUNT):
         self.operators = [Soldier() for _ in range(operator_count)]
         hp = mean([hp, *(op.hp for op in self.operators)])  # mean of vehicle hp and its operators hp
-        super().__init__(hp, recharge)
+        super().__init__(hp, recharge_ms)
 
     def inflict_damage(self):
         damage = 0.1 + sum(soldier.exp for soldier in self.operators) / 100
@@ -77,15 +83,20 @@ class Squad:
         damage = sum(unit.inflict_damage() for unit in unit_iterator('is_active', self.soldiers, self.vehicles))
         return damage  # total damage of all units
 
-    @property
     def total_hp(self):
         total_hp = sum(unit.hp for unit in unit_iterator('is_active', self.soldiers, self.vehicles))
         return total_hp
+
+    def stand_to_count(self):
+        active_units = unit_iterator('is_active', self.soldiers, self.vehicles)
+        stand_to_unit_count = sum(1 for unit in active_units if unit.stand_to)
+        return stand_to_unit_count
 
     @property
     def is_active(self):
         is_active = any(unit_iterator('is_active', self.soldiers, self.vehicles))
         return is_active
+
 
 
 class Army:
@@ -95,14 +106,16 @@ class Army:
 
     def attack(self, enemy_army):
         if self.is_active:
-            chosen_squad = choice([squad for squad in self.squads if squad.is_active])
+            # chosen_squad = choice([squad for squad in self.squads if squad.is_active])
+            active_squads = [squad for squad in self.squads if squad.is_active]
+            chosen_squad = max(active_squads, key=lambda s: s.stand_to_count())  # the most ready squad
 
             if self.strategy == 'random':
                 enemy_squad = choice([squad for squad in enemy_army.squads if squad.is_active])
             elif self.strategy == 'weakest':
-                enemy_squad = min((squad for squad in self.squads if squad.is_active), key=lambda s: s.total_hp)
+                enemy_squad = min((squad for squad in enemy_army.squads if squad.is_active), key=lambda s: s.total_hp())
             elif self.strategy == 'strongest':
-                enemy_squad = max((squad for squad in self.squads if squad.is_active), key=lambda s: s.total_hp)
+                enemy_squad = max((squad for squad in enemy_army.squads if squad.is_active), key=lambda s: s.total_hp())
 
             if chosen_squad.attack_success() > enemy_squad.attack_success():
                 damage_quotient_for_each = chosen_squad.inflict_damage() / len(list(unit_iterator('is_active',
@@ -121,6 +134,8 @@ class Army:
                             active_operators[0].hp -= damage_quotient_for_each * 0.2
                             for op in active_operators[1:3]:
                                 op.hp -= damage_quotient_for_each * 0.1
+                        else:
+                            veh.hp -= damage_quotient_for_each
 
                 for unit in unit_iterator('is_active', chosen_squad.soldiers, chosen_squad.vehicles):  # give exp
                     if isinstance(unit, Vehicle):
