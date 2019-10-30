@@ -1,6 +1,6 @@
 from units_consts import *
 from random import randint, choice, shuffle
-from time import time
+from time import monotonic
 from statistics import mean
 from specfuncs import unit_iterator, geometric_mean as gmean
 
@@ -19,15 +19,15 @@ class Unit:
         return probability_of_attack
 
     def recharge(self):
-        self.recharge_time = round(time() * 1000) + self.recharge_ms
+        self.recharge_time = round(monotonic() * 1000) + self.recharge_ms
 
     @property
     def is_active(self):
         return self.hp > 0
 
     @property
-    def stand_to(self):
-        return self.recharge_time < round(time() * 1000)
+    def is_charged(self):
+        return self.recharge_time < round(monotonic() * 1000)
 
 
 class Soldier(Unit):
@@ -80,23 +80,31 @@ class Squad:
         return probability_of_attack
 
     def inflict_damage(self):
-        damage = sum(unit.inflict_damage() for unit in unit_iterator('is_active', self.soldiers, self.vehicles))
+        charged_units = [unit for unit in unit_iterator('is_active', self.soldiers, self.vehicles) if unit.is_charged]
+        damage = sum(unit.inflict_damage() for unit in charged_units)
+        for unit in charged_units:  # gain exp and recharge
+            unit.recharge()
+            if isinstance(unit, Vehicle):
+                for op in unit.operators:
+                    op.gain_exp()
+            else:   # if unit is Soldier instance
+                unit.gain_exp()
+
         return damage  # total damage of all units
 
     def total_hp(self):
         total_hp = sum(unit.hp for unit in unit_iterator('is_active', self.soldiers, self.vehicles))
         return total_hp
 
-    def stand_to_count(self):
+    def charged_unit_count(self):
         active_units = unit_iterator('is_active', self.soldiers, self.vehicles)
-        stand_to_unit_count = sum(1 for unit in active_units if unit.stand_to)
+        stand_to_unit_count = sum(1 for unit in active_units if unit.is_charged)
         return stand_to_unit_count
 
     @property
     def is_active(self):
         is_active = any(unit_iterator('is_active', self.soldiers, self.vehicles))
         return is_active
-
 
 
 class Army:
@@ -106,10 +114,11 @@ class Army:
 
     def attack(self, enemy_army):
         if self.is_active:
-            # chosen_squad = choice([squad for squad in self.squads if squad.is_active])
-            active_squads = [squad for squad in self.squads if squad.is_active]
-            chosen_squad = max(active_squads, key=lambda s: s.stand_to_count())  # the most ready squad
-
+            # the most charged squad of active
+            chosen_squad = max((squad for squad in self.squads if squad.is_active),
+                               key=lambda s: s.charged_unit_count())
+            if chosen_squad.charged_unit_count() == 0:  # if there are no charged units in any squad
+                return False
             if self.strategy == 'random':
                 enemy_squad = choice([squad for squad in enemy_army.squads if squad.is_active])
             elif self.strategy == 'weakest':
@@ -134,15 +143,10 @@ class Army:
                             active_operators[0].hp -= damage_quotient_for_each * 0.2
                             for op in active_operators[1:3]:
                                 op.hp -= damage_quotient_for_each * 0.1
-                        else:
-                            veh.hp -= damage_quotient_for_each
-
-                for unit in unit_iterator('is_active', chosen_squad.soldiers, chosen_squad.vehicles):  # give exp
-                    if isinstance(unit, Vehicle):
-                        for op in unit.operators:
-                            op.gain_exp()
-                    else:
-                        unit.gain_exp()
+                        else:   # if the operators are 2 or less, then vehicle 70%, one random operator 30% damage
+                            veh.hp -= damage_quotient_for_each * 0.7
+                            rand_operator = choice(active_operators)
+                            rand_operator.hp -= damage_quotient_for_each * 0.3
 
     @property
     def is_active(self):

@@ -36,4 +36,4 @@ else:
     print('Enemy Army has Won!')
 
 print('Total moves:', move_counter)
-input('Press Enter to close..')
+# input('Press Enter to close..')
