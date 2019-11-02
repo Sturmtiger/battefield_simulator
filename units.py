@@ -108,7 +108,8 @@ class Squad:
 
 
 class Army:
-    def __init__(self, squad_count=SQUAD_COUNT, strategy=STRATEGIES[0]):
+    def __init__(self, country, squad_count=SQUAD_COUNT, strategy=STRATEGIES[0]):
+        self.country = country
         self.squads = [Squad() for _ in range(squad_count)]
         self.strategy = strategy
 
@@ -117,7 +118,8 @@ class Army:
             # the most charged squad of active
             chosen_squad = max((squad for squad in self.squads if squad.is_active),
                                key=lambda s: s.charged_unit_count())
-            if chosen_squad.charged_unit_count() == 0:  # if there are no charged units in any squad
+            if chosen_squad.charged_unit_count() == 0:  # stop attack if there are no charged units in any squad
+                print(f'[{self} Army] has no any charged units in squads and cannot attack [{enemy_army} Army]')
                 return False
             if self.strategy == 'random':
                 enemy_squad = choice([squad for squad in enemy_army.squads if squad.is_active])
@@ -127,10 +129,10 @@ class Army:
                 enemy_squad = max((squad for squad in enemy_army.squads if squad.is_active), key=lambda s: s.total_hp())
 
             if chosen_squad.attack_success() > enemy_squad.attack_success():
-                damage_quotient_for_each = chosen_squad.inflict_damage() / len(list(unit_iterator('is_active',
-                                                                                                  enemy_squad.soldiers,
-                                                                                                  enemy_squad.vehicles))
-                                                                               )
+                total_damage = chosen_squad.inflict_damage()
+                damage_quotient_for_each = total_damage / len(list(unit_iterator('is_active',
+                                                                                 enemy_squad.soldiers,
+                                                                                 enemy_squad.vehicles)))
                 for sold in enemy_squad.soldiers:
                     if sold.is_active:
                         sold.hp -= damage_quotient_for_each
@@ -148,7 +150,15 @@ class Army:
                             rand_operator = choice(active_operators)
                             rand_operator.hp -= damage_quotient_for_each * 0.3
 
+                print(f'[{self} Army] is attacking [{enemy_army} Army]. (Inflicted damage: {round(total_damage, 2)} hp)')
+            else:
+                print(f'[{self} Army] unsuccessfully attacked [{enemy_army} Army]')
+            return True
+
     @property
     def is_active(self):
         is_active = any(squad for squad in self.squads if squad.is_active)
         return is_active
+
+    def __str__(self):
+        return self.country
