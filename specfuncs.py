@@ -2,26 +2,16 @@
 Special functions for battlefield-simulator game
 """
 
-import numpy
+from random import choice
+from strategies import STRATEGY_REGISTRY
 
 
-def geometric_mean(iterable):
-    """
-    :param iterable: take list of numbers
-    :return: geometric mean (float type)
-    """
-    log_array = numpy.log(iterable)
-    # print('\n\n', 'iterable:', iterable, '\n','a:', a, '\n','len(a):', len(a), '\n\n')
-    return numpy.exp(log_array.sum() / len(log_array))
+def choose_squad(squads, strategy_name):
+    defined_strategy = STRATEGY_REGISTRY[strategy_name]
+    chosen_squad = defined_strategy.choose_squad(squads)
+    return chosen_squad
 
 
-def unit_iterator(verification_property, *unit_iterables):
-    """
-    :param verification_property: property checking unit
-    :param unit_iterables: take lists of units
-    :return: generator of units that have passed verification_property
-    """
-    for unit_list in unit_iterables:
-        for unit in unit_list:
-            if getattr(unit, verification_property):
-                yield unit
+def get_random_strategy_name():
+    strategy_names = list(STRATEGY_REGISTRY.keys())
+    return choice(strategy_names)

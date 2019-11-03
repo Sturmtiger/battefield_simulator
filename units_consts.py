@@ -15,8 +15,3 @@ COUNTRY_NAMES = [
     'Ukraine', 'USA', 'Russia', 'Serbia', 'Turkey',
     'Canada', 'Finland', 'Germany', 'Poland', 'Hungary',
 ]
-STRATEGIES = [
-    'random',
-    'weakest',
-    'strongest',
-]
