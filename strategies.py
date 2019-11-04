@@ -1,5 +1,4 @@
-from random import choice
-
+from pseudo_random import p_rand
 
 STRATEGY_REGISTRY = dict()
 
@@ -20,7 +19,8 @@ class RandomStrategy(Strategy):
     name = 'random'
 
     def choose_squad(squads_iterable):
-        chosen_squad = choice(squads_iterable)
+        # chosen_squad = choice(squads_iterable)
+        chosen_squad = p_rand.choice(squads_iterable)
         return chosen_squad
 
 

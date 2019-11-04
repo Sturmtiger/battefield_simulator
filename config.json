@@ -1,0 +1,1 @@
+{"seed": 74, "constants": {"squad_count": 3, "soldier_count": 4, "vehicle_count": 2, "operator_count": 3, "vehicle_recharge_ms": 20, "soldier_recharge_ms": 5, "soldier_exp": 0, "soldier_hp": 100, "vehicle_hp": 200}, "armies": [{"name": "Turkey", "strategy_name": "random"}, {"name": "Serbia", "strategy_name": "weakest"}, {"name": "Canada", "strategy_name": "weakest"}]}

@@ -2,7 +2,7 @@
 Special functions for battlefield-simulator game
 """
 
-from random import choice
+from pseudo_random import p_rand
 from strategies import STRATEGY_REGISTRY
 
 
@@ -14,4 +14,4 @@ def choose_squad(squads, strategy_name):
 
 def get_random_strategy_name():
     strategy_names = list(STRATEGY_REGISTRY.keys())
-    return choice(strategy_names)
+    return p_rand.choice(strategy_names)

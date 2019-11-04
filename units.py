@@ -1,8 +1,10 @@
 from units_consts import *
 from specfuncs import choose_squad
-from random import randint, choice
+from pseudo_random import p_rand
 from time import monotonic
-from statistics import mean, geometric_mean as gmean
+# from statistics import mean, geometric_mean as gmean
+from statistics import mean
+from statistics import mean as gmean
 
 
 # abstract class
@@ -19,7 +21,8 @@ class Unit:
         return probability_of_attack
 
     def recharge(self):
-        self.recharge_time = round(monotonic() * 1000) + self.recharge_ms
+        pass
+        # self.recharge_time = round(monotonic() * 1000) + self.recharge_ms
 
     def get_damage(self, damage):
         pass
@@ -43,7 +46,7 @@ class Soldier(Unit):
         return super().inflict_damage(damage)
 
     def attack_success(self):
-        probability_of_attack = 0.5 * (1 + self.hp / 100) * randint(50 + self.exp, 100) / 100
+        probability_of_attack = 0.5 * (1 + self.hp / 100) * p_rand.randint(50 + self.exp, 100) / 100
         return super().attack_success(probability_of_attack)
 
     def get_damage(self, damage):
@@ -73,7 +76,7 @@ class Vehicle(Unit):
         active_operators = [op for op in self.operators if op.is_active]
         if len(active_operators) > 2:
             self.hp -= damage * 0.6
-            unlucky_op = choice(active_operators)
+            unlucky_op = p_rand.choice(active_operators)
             for op in active_operators:
                 if op is unlucky_op:
                     op.get_damage(damage * 0.2)
@@ -81,7 +84,7 @@ class Vehicle(Unit):
                     op.get_damage(damage * 0.1)
         else:
             self.hp -= damage * 0.7
-            rand_op = choice(active_operators)
+            rand_op = p_rand.choice(active_operators)
             rand_op.get_damage(damage * 0.3)
 
     def gain_exp(self):
