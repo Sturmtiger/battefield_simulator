@@ -2,9 +2,9 @@ from units_consts import *
 from specfuncs import choose_squad
 from pseudo_random import p_rand
 from time import monotonic
-# from statistics import mean, geometric_mean as gmean
-from statistics import mean
-from statistics import mean as gmean
+from statistics import mean, geometric_mean as gmean
+# from statistics import mean
+# from statistics import mean as gmean
 
 
 # abstract class
