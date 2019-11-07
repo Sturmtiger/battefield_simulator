@@ -7,7 +7,7 @@ from statistics import mean
 
 # abstract class
 class Unit:
-    def __init__(self, hp, recharge_ms):   # make recharge work!!!!
+    def __init__(self, hp, recharge_ms):
         self.hp = hp
         self.recharge_ms = recharge_ms
         self.recharge_time = 0
