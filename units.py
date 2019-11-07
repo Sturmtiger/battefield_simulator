@@ -1,10 +1,8 @@
-from units_consts import *
-from specfuncs import choose_squad
+from specfuncs import choose_squad, geometric_mean as gmean
+from units_configuration import *
 from pseudo_random import p_rand
 from time import monotonic
-# from statistics import mean, geometric_mean as gmean
 from statistics import mean
-from statistics import mean as gmean
 
 
 # abstract class
@@ -22,10 +20,10 @@ class Unit:
 
     def recharge(self):
         pass
-        # self.recharge_time = round(monotonic() * 1000) + self.recharge_ms
+        # self.recharge_time = monotonic() * 1000 + self.recharge_ms
 
     def get_damage(self, damage):
-        pass
+        raise NotImplementedError
 
     @property
     def is_active(self):
@@ -37,8 +35,8 @@ class Unit:
 
 
 class Soldier(Unit):
-    def __init__(self, hp=SOLDIER_HP, recharge_ms=SOLDIER_RECHARGE_MS, exp=SOLDIER_EXP):
-        self.exp = exp
+    def __init__(self, hp=SOLDIER_HP, recharge_ms=SOLDIER_RECHARGE_MS):
+        self.exp = 0
         super().__init__(hp, recharge_ms)
 
     def inflict_damage(self):
@@ -58,8 +56,8 @@ class Soldier(Unit):
 
 
 class Vehicle(Unit):
-    def __init__(self, hp=VEHICLE_HP, recharge_ms=VEHICLE_RECHARGE_MS, operator_count=OPERATOR_COUNT):
-        self.operators = [Soldier() for _ in range(operator_count)]
+    def __init__(self, operators_lst, hp=VEHICLE_HP, recharge_ms=VEHICLE_RECHARGE_MS):
+        self.operators = operators_lst
         hp = mean([hp, *(op.hp for op in self.operators)])  # mean of vehicle hp and its operators hp
         super().__init__(hp, recharge_ms)
 
@@ -84,8 +82,8 @@ class Vehicle(Unit):
                     op.get_damage(damage * 0.1)
         else:
             self.hp -= damage * 0.7
-            rand_op = p_rand.choice(active_operators)
-            rand_op.get_damage(damage * 0.3)
+            unlucky_op = p_rand.choice(active_operators)
+            unlucky_op.get_damage(damage * 0.3)
 
     def gain_exp(self):
         active_operators = [op for op in self.operators if op.is_active]
@@ -99,16 +97,20 @@ class Vehicle(Unit):
 
 
 class Squad:
-    def __init__(self, soldier_count=SOLDIER_COUNT, vehicle_count=VEHICLE_COUNT):
-        self.units = [Soldier() for _ in range(soldier_count)] + [Vehicle() for _ in range(vehicle_count)]
+    def __init__(self, units_lst):
+        self.units = units_lst
 
-    def inflict_damage(self):
-        charged_units = [unit for unit in self.active_units if unit.is_charged]
-        total_damage = sum(unit.inflict_damage() for unit in charged_units)
-        for unit in charged_units:
-            unit.recharge()
-            unit.gain_exp()
-        return total_damage
+    def attack(self, enemy_squad):
+        if self.attack_success >= enemy_squad.attack_success:
+            charged_units = [unit for unit in self.active_units if unit.is_charged]
+            damage = self.total_damage
+            enemy_squad.get_damage(damage)
+            print(f'\t[Squad] is attacking [Enemy Squad]. (Inflicted damage: {round(damage, 2)} hp)')
+            for unit in charged_units:
+                unit.recharge()
+                unit.gain_exp()
+        else:
+            print(f'\t[Squad] unsuccessfully attacked [Enemy Squad]')
 
     def get_damage(self, damage):
         active_units_lst = self.active_units
@@ -117,13 +119,19 @@ class Squad:
             unit.get_damage(damage_quotient_for_each)
 
     @property
+    def total_damage(self):
+        charged_units = [unit for unit in self.active_units if unit.is_charged]
+        total_damage = sum(unit.inflict_damage() for unit in charged_units)
+        return total_damage
+
+    @property
     def total_hp(self):
         total_hp = sum(unit.hp for unit in self.units if unit.is_active)
         return total_hp
 
     @property
     def attack_success(self):
-        probability_of_attack = gmean(unit.attack_success() for unit in self.units if unit.is_active)
+        probability_of_attack = gmean([unit.attack_success() for unit in self.units if unit.is_active])
         return probability_of_attack
 
     @property
@@ -144,9 +152,9 @@ class Squad:
 
 
 class Army:
-    def __init__(self, country, squad_count=SQUAD_COUNT, strategy_name='random'):
+    def __init__(self, country, strategy_name, squads_lst):
         self.country = country
-        self.squads = [Squad() for _ in range(squad_count)]
+        self.squads = squads_lst
         self.strategy_name = strategy_name
 
     def __str__(self):
@@ -160,15 +168,9 @@ class Army:
                 print(f'[{self} Army] has no any charged units in squads and cannot attack [{enemy_army} Army]')
                 return
 
+            print(f'[{self} Army] is attacking [{enemy_army} Army]:')
             enemy_squad = choose_squad(enemy_army.active_squads, self.strategy_name)
-
-            if chosen_squad.attack_success >= enemy_squad.attack_success:
-                total_damage = chosen_squad.inflict_damage()
-                enemy_squad.get_damage(total_damage)
-
-                print(f'[{self} Army] is attacking [{enemy_army} Army]. (Inflicted damage: {round(total_damage, 2)} hp)')
-            else:
-                print(f'[{self} Army] unsuccessfully attacked [{enemy_army} Army]')
+            chosen_squad.attack(enemy_squad)
 
     @property
     def is_active(self):

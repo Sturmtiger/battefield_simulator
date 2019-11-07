@@ -11,7 +11,7 @@ class Strategy:
     name = None
 
     def choose_squad(squads):
-        pass
+        raise NotImplementedError
 
 
 @registry

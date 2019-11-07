@@ -2,8 +2,13 @@
 Special functions for battlefield-simulator game
 """
 
-from pseudo_random import p_rand
+from math import exp, fsum, log
+from random import choice
 from strategies import STRATEGY_REGISTRY
+
+
+def geometric_mean(iterable):
+    return exp(fsum(log(x) for x in iterable) / len(iterable))
 
 
 def choose_squad(squads, strategy_name):
@@ -14,4 +19,4 @@ def choose_squad(squads, strategy_name):
 
 def get_random_strategy_name():
     strategy_names = list(STRATEGY_REGISTRY.keys())
-    return p_rand.choice(strategy_names)
+    return choice(strategy_names)
