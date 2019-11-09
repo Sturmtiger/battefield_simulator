@@ -27,8 +27,8 @@ class Unit:
 
     def recharge(self):
         """recharges a unit"""
-        pass
-        # self.recharge_time = monotonic() * 1000 + self.recharge_ms
+        # pass
+        self.recharge_time = monotonic() * 1000 + self.recharge_ms
 
     def get_damage(self, damage):
         """takes damage value and spreads to the unit"""

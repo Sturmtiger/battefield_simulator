@@ -12,7 +12,10 @@ class TestSoldier(unittest.TestCase):
         self.assertNotEqual(self.soldier.hp, 0)
 
     def test_inflict_damage(self):
-        self.assertEqual(0.05 + self.soldier.exp / 100, self.soldier.inflict_damage())
+        self.assertEqual(self.soldier.inflict_damage(), 0.05)
+
+        self.soldier.gain_exp()
+        self.assertEqual(round(self.soldier.inflict_damage(), 2), 0.06)
 
     def test_gain_exp(self):
         self.soldier.gain_exp()
