@@ -1,27 +1,33 @@
-from pseudo_random import p_rand
-from specfuncs import get_random_strategy_name
+"""This module consists of army create structures and game logic"""
+
 from random import randint, shuffle, choice
+from pseudo_random import PSEUDO_RAND
+from specfuncs import get_random_strategy_name
 from json_listener import JsonListener
 from units import Army, Squad, Soldier, Vehicle
-from units_configuration import *
+import units_configuration as u_conf
 
 
 class Game:
+    """This class creates army structure and may run a game (war between armies)"""
+
     def __init__(self, armies):
         self.armies = armies
 
     def run_game(self):
+        """This method runs game"""
         for army in self.armies:
-            print(f'Army of {army.country} joined the game... Commander of army chose the strategy -> '
-                  f'({army.strategy_name})')
+            print(f'Army of {army.country} joined the game...'
+                  f' Commander of army chose the strategy -> ({army.strategy_name})')
 
         move_counter = 0
         while len([army for army in self.armies if army.is_active]) != 1:
             move_counter += 1
             print('Move:', move_counter)
             for attacking_army in [army for army in self.armies if army.is_active]:
-                enemy_armies = [army for army in self.armies if army.is_active and army is not attacking_army]
-                chosen_enemy_army = p_rand.choice(enemy_armies)
+                enemy_armies = [army for army in self.armies
+                                if army.is_active and army is not attacking_army]
+                chosen_enemy_army = PSEUDO_RAND.choice(enemy_armies)
                 attacking_army.attack(chosen_enemy_army)
 
         print('Total moves:', move_counter)
@@ -29,10 +35,13 @@ class Game:
         print('Winner:', winner)
 
     @classmethod
-    def load_json_structure(cls):
+    def create_from_json_structure(cls):
+        """This method create armies structure from JSON config file
+        and return Game class instance that takes it
+        """
         structure = JsonListener.load_structure()
         seed = structure['seed']
-        p_rand.seed(seed)
+        PSEUDO_RAND.seed(seed)
 
         armies = list()
         for army in structure['armies']:
@@ -50,14 +59,15 @@ class Game:
 
     @classmethod
     def create_new_structure(cls):
+        """This method create new armies structure and return Game class instance that takes it"""
         rand_seed = randint(0, 1000)
-        p_rand.seed(rand_seed)
-        country_names = COUNTRY_NAMES.copy()
+        PSEUDO_RAND.seed(rand_seed)
+        country_names = u_conf.COUNTRY_NAMES.copy()
         shuffle(country_names)
 
         armies = list()
 
-        army_count = randint(MIN_ARMY_COUNT, MAX_ARMY_COUNT)
+        army_count = randint(u_conf.MIN_ARMY_COUNT, u_conf.MAX_ARMY_COUNT)
         for i in range(army_count):
             armies.append(
                 cls.create_army(
@@ -72,19 +82,29 @@ class Game:
 
     @classmethod
     def create_soldier(cls):
+        """This method returns Soldier class instance"""
         soldier = Soldier()
         return soldier
 
     @classmethod
     def create_vehicle(cls, operator_count=None):
+        """This method returns Vehicle class instance
+
+        :arg operator_count:
+            Operator count(int) (for 'create_from_json_structure' method)
+            Default value: None (for 'create_new_structure' method)
+
+        :return:
+            Vehicle class instance
+
+        """
         operators = list()
 
         if operator_count is not None:
-            operator_count = operator_count
             for _ in range(operator_count):
                 operators.append(cls.create_soldier())
         else:
-            operator_count = randint(MIN_OPERATOR_COUNT, MAX_OPERATOR_COUNT)
+            operator_count = randint(u_conf.MIN_OPERATOR_COUNT, u_conf.MAX_OPERATOR_COUNT)
             for _ in range(operator_count):
                 operators.append(cls.create_soldier())
 
@@ -94,6 +114,18 @@ class Game:
 
     @classmethod
     def create_squad(cls, units_data=None):
+        """This method returns Squad class instance
+
+        :arg units_data:
+            1.For 'create_from_json_structure' method: List of dicts with units data
+            Example: [{'type': 'Soldier'}, ... , {'type': 'Soldier'}]
+
+            2.For 'create_new_structure' method: Default to None
+
+        :return:
+            Squad class instance
+
+        """
         units = list()
 
         if units_data is not None:
@@ -103,7 +135,7 @@ class Game:
                 elif unit['type'] == 'Vehicle':
                     units.append(cls.create_vehicle(len(unit['operators'])))
         else:
-            unit_count = randint(MIN_UNIT_COUNT, MAX_UNIT_COUNT)
+            unit_count = randint(u_conf.MIN_UNIT_COUNT, u_conf.MAX_UNIT_COUNT)
             for _ in range(unit_count):
                 unit = choice([cls.create_soldier, cls.create_vehicle])()
                 units.append(unit)
@@ -114,6 +146,20 @@ class Game:
 
     @classmethod
     def create_army(cls, country, strategy_name, squads_data=None):
+        """This method creates and returns Army class instance
+
+        :arg country:
+            Country name(str)
+        :arg strategy_name:
+            Strategy name(str) (from 'strategies.py' module)
+        :arg squads_data:
+            1.For 'create_from_json_structure' method:
+            List of squad dicts containing unit data dicts
+            Example: [[{'type': 'Soldier'}, ...], ..., [{'type': 'Soldier'}, ...]]
+
+            2.For 'create_new_structure' method: Default to None
+
+        """
         squads = list()
 
         if squads_data is not None:
@@ -123,7 +169,7 @@ class Game:
                     cls.create_squad(squad_data['units'])
                 )
         else:
-            squad_count = randint(MIN_SQUAD_COUNT, MAX_SQUAD_COUNT)
+            squad_count = randint(u_conf.MIN_SQUAD_COUNT, u_conf.MAX_SQUAD_COUNT)
             for squad in range(squad_count):
                 squads.append(
                     cls.create_squad()

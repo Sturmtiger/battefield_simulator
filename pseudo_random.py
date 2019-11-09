@@ -1,4 +1,6 @@
+"""This module contains pseudo random instance for battlefield"""
+
 from random import Random
 
 
-p_rand = Random()
+PSEUDO_RAND = Random()

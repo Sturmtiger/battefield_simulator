@@ -1,4 +1,6 @@
-from pseudo_random import p_rand
+"""You can add new strategies in this module"""
+
+from pseudo_random import PSEUDO_RAND
 
 STRATEGY_REGISTRY = dict()
 
@@ -20,7 +22,7 @@ class RandomStrategy(Strategy):
 
     def choose_squad(squads_iterable):
         # chosen_squad = choice(squads_iterable)
-        chosen_squad = p_rand.choice(squads_iterable)
+        chosen_squad = PSEUDO_RAND.choice(squads_iterable)
         return chosen_squad
 
 
